@@ -10,7 +10,7 @@ library(lemon)
  
 plot_all <- list() 
 
-####################### Figure 4(a) #######################
+####################### Figure 4(a) and (b) #######################
 hdir <- "../../Data/HongKong/"
 name_csv <- "infection_counts_obs.csv"
 dir_csv <- paste0(hdir,name_csv)
@@ -24,7 +24,8 @@ plot_all[[1]] <- infection_counts_obs %>% mutate(variables=case_when(variables==
   geom_bar(stat="identity", color=NA, position="stack")  +
   xlab("") +ylab("") +ggtitle("Hong Kong: daily infections")+ ylab("")+  ylim(0,50)+
   scale_x_date(date_breaks = "15 day", date_labels =  "%b-%d",limits =plot_date_hongkong) +
-  theme_minimal(base_size = 12) +  
+  theme_minimal(base_size = 12) + 
+  labs(tag = "(a)") +
   theme(legend.title = element_blank(),legend.position = c(0.15, 0.85),
         plot.title = element_text(hjust = 0.5),
         panel.grid.minor = element_blank(),
@@ -46,6 +47,7 @@ plot_all[[2]]<- infection_counts_obs %>% mutate(variables=case_when(variables=="
   xlab("") +ylab("") +ggtitle("Victoria: daily infections")+ ylab("")+  
   scale_x_date(date_breaks = "15 day", date_labels =  "%b-%d",limits =plot_date_australia) +
   theme_minimal(base_size = 12) +  
+  labs(tag = "(b)") +
   theme(legend.title = element_blank(),legend.position = c(0.15, 0.85),
         plot.title = element_text(hjust = 0.5),
         panel.grid.minor = element_blank(),
@@ -53,7 +55,7 @@ plot_all[[2]]<- infection_counts_obs %>% mutate(variables=case_when(variables=="
         panel.background = element_blank())  
 
 
-####################### Figure 4(b) #######################
+####################### Figure 4(c) and (d) #######################
 hdir <- "../../Results/Rt_Estimation/"
 
 int_name <- "hongkong"
@@ -71,6 +73,7 @@ plot_all[[3]]<-res_Rt_hongkong  %>% mutate(Type = recode_factor(Type, `No miside
   xlab("") + ylab("") +   ylim(0,6)+ ggtitle("Hong Kong: local time-vary reproduction numbers")+
   scale_x_date(date_breaks = "15 day", date_labels =  "%b-%d",limits =  plot_date_hongkong) +
   theme_minimal(base_size = 12) +  
+  labs(tag = "(c)") +
   geom_hline(yintercept=1, linetype="dashed")+
   scale_colour_discrete(labels = parse_format()) +
   scale_fill_discrete(labels = parse_format())  +
@@ -95,7 +98,8 @@ plot_all[[4]]<- res_Rt_australia  %>% mutate(Type = recode_factor(Type, `No misi
   geom_line( aes(y = means), size = 1)+ 
   xlab("") + ylab("") +   ylim(0,6)+ ggtitle("Victoria: local time-vary reproduction numbers")+
   scale_x_date(date_breaks = "15 day", date_labels =  "%b-%d",limits =  plot_date_australia) +
-  theme_minimal(base_size = 12) +  
+  theme_minimal(base_size = 12) + 
+  labs(tag = "(d)") +
   geom_hline(yintercept=1, linetype="dashed")+
   scale_colour_discrete(labels = parse_format()) +
   scale_fill_discrete(labels = parse_format())  +
