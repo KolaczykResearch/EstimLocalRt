@@ -4,10 +4,10 @@ library(data.table)
 library(tidyr)
 
 # set a directory for input
-hdir <- "../../Data/HongKong/"
+hdir <- "../Data/HongKong/"
 
 # set a destination for output
-sdir <- "../../Data/HongKong/"
+sdir <- "../Data/HongKong/"
 
 # data is available at https://doi.org/10.1038/s41591-020-1092-01
 name_csv <- "case_data.csv"  
