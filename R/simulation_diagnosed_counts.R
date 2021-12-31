@@ -9,7 +9,7 @@ library(gridExtra)
 library(lemon)
 
 # set a directory for input
-hdir <- "../../Results/Simulation_Epidemics/"
+hdir <- "../Results/Simulation_Epidemics/"
 
 
 # mean of daily local and imported diagnosed counts in 1,000 simulation trials forepidemics in Hong Kong
@@ -43,9 +43,9 @@ plot_diagnosed <- list()
 plot_diagnosed[[1]]  <- sim_results_mean_diagnosed1%>% mutate(variables=case_when(variables=="local" ~ "Local cases",
    variables=="imported" ~ "Imported cases")) %>% ggplot( aes(as.Date(dates), y = means,fill=variables  ))+ 
   geom_bar(stat="identity", color=NA, position="stack")  +
-  xlab("") +ylab("") +ggtitle("Daily diagnosed counts in Hong Kong")+ ylab("")+  
+  xlab("") +ylab("Diagnosed counts") +ggtitle("Daily diagnosed counts in Hong Kong")+ 
   scale_x_date(date_breaks = "15 day", date_labels =  "%b-%d") + ylim(0,50)+
-  theme_minimal(base_size = 12) +  
+  theme_minimal(base_size = 16) +  
   theme(legend.title = element_blank(),legend.position = c(0.15, 0.85),
         plot.title = element_text(hjust = 0.5),
         panel.grid.minor = element_blank(),
@@ -55,14 +55,16 @@ plot_diagnosed[[1]]  <- sim_results_mean_diagnosed1%>% mutate(variables=case_whe
 plot_diagnosed[[2]]  <- sim_results_mean_diagnosed2%>% mutate(variables=case_when(variables=="local" ~ "Local cases",
                                                                                   variables=="imported" ~ "Imported cases")) %>% ggplot( aes(as.Date(dates), y = means,fill=variables  ))+ 
   geom_bar(stat="identity", color=NA, position="stack")  +
-  xlab("") +ylab("") +ggtitle("Daily diagnosed counts in Victoria")+ ylab("")+  
+  xlab("") +ylab("Diagnosed counts") +ggtitle("Daily diagnosed counts in Victoria")+   
   scale_x_date(date_breaks = "15 day", date_labels =  "%b-%d") + ylim(0,50)+
-  theme_minimal(base_size = 12) +  
+  theme_minimal(base_size = 16) +  
   theme(legend.title = element_blank(),legend.position = c(0.15, 0.85),
         plot.title = element_text(hjust = 0.5),
         panel.grid.minor = element_blank(),
         panel.border = element_rect(fill=NA,color="black", size=0.5),
         panel.background = element_blank())  
 
- 
-
+sdir <- "../Results/Figure/"
+pdf(file=paste0(sdir,"Fig2.pdf"), width =12, height =5,onefile = F)
+grid_arrange_shared_legend( plot_diagnosed[[1]] ,plot_diagnosed[[2]] , ncol = 2, nrow = 1, position='bottom')
+dev.off()

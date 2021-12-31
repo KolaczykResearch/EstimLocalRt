@@ -16,11 +16,19 @@ library(nimble)
 source("model_bayesian.R")
 source("Rt_misc.R")
 
+getBetaPara <- function(mu,sigma)
+{
+  k=(1-mu)/mu
+  a=mu*((1-mu)*mu/sigma^2-1)
+  b=a*k
+  return(c(a,b))
+}
+
 # set a directory for input
-hdir <- "../../Results/Simulation_Epidemics/"
+hdir <- "../Results/Simulation_Epidemics/"
 
 # set a directory for output
-sdir <- "../../Results/Rt_Estimation/"
+sdir <- "../Results/Rt_Estimation/"
  
 ntask <- as.numeric(Sys.getenv("SGE_TASK_ID"))
 if ( is.na(ntask) ) ntask <- 1
@@ -37,36 +45,32 @@ if(ntask <= 6)
 }
 
 if(ntask %in% c(1,7) ) {
-  zeta_0_true <- 2
-  xi_0_true <- 18
-  zeta_1_true <- 2
-  xi_1_true <- 8
+  mean_0_true <- .1
+  mean_1_true <- .3
 } else if(ntask %in% c(2,8) ){
-  zeta_0_true <- 2
-  xi_0_true <- 18
-  zeta_1_true <- 4
-  xi_1_true <- 8
+  mean_0_true <- .1
+  mean_1_true <- .4
 } else if(ntask %in% c(3,9) ){
-  zeta_0_true <- 2
-  xi_0_true <- 18
-  zeta_1_true <- 8
-  xi_1_true <- 8
+  mean_0_true <- .1
+  mean_1_true <- .5
 } else if(ntask %in% c(4,10) ){
-  zeta_0_true <- 2
-  xi_0_true <- 8
-  zeta_1_true <- 2
-  xi_1_true <- 18
+  mean_1_true <- .1
+  mean_0_true <- .3
 } else if(ntask %in% c(5,11) ){
-  zeta_1_true <- 2
-  xi_1_true <- 18
-  zeta_0_true <- 4
-  xi_0_true <- 8
+  mean_1_true <- .1
+  mean_0_true <- .4
 } else if(ntask %in% c(6,12) ){
-  zeta_1_true <- 2
-  xi_1_true <- 18
-  zeta_0_true <- 8
-  xi_0_true <- 8
+  mean_1_true <- .1
+  mean_0_true <- .5
 }
+
+sd_0_true <- sd_1_true <- .02
+para_0 <- getBetaPara(mean_0_true,sd_0_true)
+para_1 <- getBetaPara(mean_1_true,sd_1_true)
+zeta_0_true <- para_0[1]
+xi_0_true <- para_0[2]
+zeta_1_true <- para_1[1]
+xi_1_true <- para_1[2]
 
 # set seed
 set.seed(1)
@@ -112,8 +116,10 @@ sim_results_wide <- fread(dir_csv, header = T) %>% select(sim_num,dates,exogenou
   mutate(dates=as.Date(dates)) %>%spread(exogenous, count)
 
 # tilde N_local, tilde N_import
-sim_results_obs <- sim_results_wide %>% mutate(local_obs = rbinom(length(local), local, 1-rbeta(length(local),zeta_1_true,xi_1_true))+
-                                                   rbinom(length(imported), imported, rbeta(length(imported),zeta_0_true,xi_0_true) ),
+alpha_1_gen <- rep(rbeta(n_sims,zeta_1_true,xi_1_true),each=length(date_seq))
+alpha_0_gen <- rep(rbeta(n_sims,zeta_0_true,xi_0_true),each=length(date_seq))
+sim_results_obs <- sim_results_wide %>% mutate(local_obs = rbinom(length(local), local, 1-alpha_1_gen )+
+                                                   rbinom(length(imported), imported, alpha_0_gen ),
                                                  imported_obs=local+imported-local_obs ) %>%select(sim_num,dates,local_obs,imported_obs) %>%
   rename(local=local_obs,imported=imported_obs)
 
@@ -145,21 +151,21 @@ plot_true_diagnosed <- data.frame(dates=date_seq ,means=res_true_diagnosed,Type=
 # estimate instantaneous reproduction number
 est_res <- res_est <- plot_est <- list() 
 
-# EpiEstim (no sliding)
-tau <- 0
-date_start <- 2 
-mean_prior <- std_prior <- 1 
-t_start <- date_start:(length(date_seq)-tau )
-t_end <- t_start +tau 
-
 name_csv <- paste0("symptomatic_counts_",int_name,".csv") 
 dir_csv <- paste0(hdir,name_csv)
 si_distr_csv <-  fread(dir_csv, header = T) 
 
-est_res[[1]]  <- foreach (i=1:n_sims,.combine=rbind,.packages=c("EpiEstim","dplyr","tidyr")) %dopar% { 
+# EpiEstim (no sliding)
+tau <- 0
+date_start <- 2
+mean_prior <- std_prior <- 1
+t_start <- date_start:(length(date_seq)-tau )
+t_end <- t_start +tau
+
+est_res[[1]]  <- foreach (i=1:n_sims,.combine=rbind,.packages=c("EpiEstim","dplyr","tidyr")) %dopar% {
   sim_num <- i-1
   si_distr <- si_distr_csv %>% subset(sim_num==(i-1)) %>% select(SI) %>% subset(SI>0) %>% group_by(SI)%>%
-    summarise(freq=n() )  %>% mutate(prob=freq/sum(freq)) %>% select(SI,prob) %>% 
+    summarise(freq=n() )  %>% mutate(prob=freq/sum(freq)) %>% select(SI,prob) %>%
     complete(SI= 0:(length(date_seq)-1),fill = list(prob = 0))%>% select(prob) %>% unlist
   dates <- as.character(date_seq[t_end])
   incid <- sim_results_obs %>% subset(sim_num==(i-1)) %>% select(-sim_num)
@@ -172,12 +178,12 @@ est_res[[1]]  <- foreach (i=1:n_sims,.combine=rbind,.packages=c("EpiEstim","dply
 # EpiEstim (weekly sliding)
 tau <- 6
 t_start <- date_start:(length(date_seq)-tau )
-t_end <- t_start +tau 
+t_end <- t_start +tau
 
-est_res[[2]]  <- foreach (i=1:n_sims,.combine=rbind,.packages=c("EpiEstim","dplyr","tidyr")) %dopar% { 
+est_res[[2]]  <- foreach (i=1:n_sims,.combine=rbind,.packages=c("EpiEstim","dplyr","tidyr")) %dopar% {
   sim_num <- i-1
   si_distr <- si_distr_csv %>% subset(sim_num==(i-1)) %>% select(SI) %>% subset(SI>0) %>% group_by(SI)%>%
-    summarise(freq=n() )  %>% mutate(prob=freq/sum(freq)) %>% select(SI,prob) %>% 
+    summarise(freq=n() )  %>% mutate(prob=freq/sum(freq)) %>% select(SI,prob) %>%
     complete(SI= 0:(length(date_seq)-1),fill = list(prob = 0))%>% select(prob) %>% unlist
   dates <- as.character(date_seq[t_end])
   incid <- sim_results_obs %>% subset(sim_num==(i-1)) %>% select(-sim_num)
@@ -205,7 +211,7 @@ est_res[[3]]  <- foreach (i=1:n_sims,.combine=rbind,.packages=c("nimble","dplyr"
                        incid <- sim_results_obs %>% subset(sim_num==(i-1)) %>% select(-sim_num)
                        ni <- sim_results_wide %>% subset(sim_num==(i-1)) %>% select(-sim_num)%>% summarise(imported=sum(imported),local=sum(local))
                        beta_est <- BetaMixture::BM_Fit(c(rbeta(ni$imported,zeta_0_true,xi_0_true),
-                                                         rbeta(ni$local,xi_1_true,zeta_1_true) ), 2, 0.01, 1)
+                                                        rbeta(ni$local,xi_1_true,zeta_1_true) ), 2, 0.01, 1)
                        zeta_0_est <- beta_est$Alpha[1]
                        xi_0_est <- beta_est$Beta[1]
                        zeta_1_est<- beta_est$Beta[2]
@@ -215,10 +221,10 @@ est_res[[3]]  <- foreach (i=1:n_sims,.combine=rbind,.packages=c("nimble","dplyr"
                        alpha_0_rand <- zeta_0_est/(zeta_0_est+xi_0_est)
                        alpha_1_rand <- zeta_1_est/(zeta_1_est+xi_1_est)
                        I_local_true_rand <- ((1-alpha_0_rand)*incid$local-alpha_0_rand*incid$imported)/(1-alpha_0_rand-alpha_1_rand)
-                       I_local_true_rand <- ifelse(I_local_true_rand<0, 0,I_local_true_rand) 
+                       I_local_true_rand <- ifelse(I_local_true_rand<0, 0,I_local_true_rand)
                        I_local_true_rand <- round(ifelse(I_local_true_rand>incid$local + incid$imported,  incid$local + incid$imported,I_local_true_rand) )
                        I_imported_true_rand <- incid$local + incid$imported - I_local_true_rand
-                       initsFunction <- function() list(alpha_0=rbeta(1,zeta_0_est,xi_0_est) ,alpha_1=rbeta(1,zeta_1_est,xi_1_est),mu_imported=rpois(sim.constants$n_days,1),mu_local=rpois(1,1), 
+                       initsFunction <- function() list(alpha_0=rbeta(1,zeta_0_est,xi_0_est) ,alpha_1=rbeta(1,zeta_1_est,xi_1_est),mu_imported=rpois(sim.constants$n_days,1),mu_local=rpois(1,1),
                                                         R_local=rgamma(sim.constants$n_days,1,1),
                                                         I_local_true= I_local_true_rand,
                                                         I_imported_true = I_imported_true_rand )
@@ -251,7 +257,7 @@ for(i in 1:2)
   plot_est[[i]]  <- res_est[[i]] %>% select(sim_num,dates,ave,low,high) %>% group_by(dates) %>%
     summarise(means=mean(ave,na.rm=TRUE),Low=mean(low,na.rm=TRUE),High=mean(high,na.rm=TRUE)) %>% mutate(Type=type_seq[i],country=int_name,
        zeta_0_true=zeta_0_true,xi_0_true=xi_0_true,zeta_1_true=zeta_1_true,xi_1_true=xi_1_true)
-  
+
 }
 
 i <- 3
@@ -265,8 +271,8 @@ plot_est[[i]]  <- res_est[[i]] %>% select(sim_num,dates,ave,low,high)%>%group_by
 
 plot_est[[length(type_seq)+1]] <- plot_true
 plot_est[[length(type_seq)+2]] <- plot_true_diagnosed
-data_long <- Reduce(function(x, y) merge(x, y, all=TRUE), plot_est)  
- 
+data_long <- Reduce(function(x, y) merge(x, y, all=TRUE), plot_est)
+
 write.csv(data_long,file = paste0(sdir,"simulation_",int_name,"_",ntask,".csv"),row.names = FALSE )
 
 stopCluster(cl)

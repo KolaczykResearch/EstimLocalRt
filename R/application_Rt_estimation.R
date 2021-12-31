@@ -16,8 +16,17 @@ library(nimble)
 source("model_bayesian.R")
 source("Rt_misc.R")
 
+
+getBetaPara <- function(mu,sigma)
+{
+  k=(1-mu)/mu
+  a=mu*((1-mu)*mu/sigma^2-1)
+  b=a*k
+  return(c(a,b))
+}
+
 # set a directory for output
-sdir <- "../../Results/Rt_Estimation/"
+sdir <- "../Results/Rt_Estimation/"
 
 ntask <- as.numeric(Sys.getenv("SGE_TASK_ID"))
 if ( is.na(ntask) ) ntask <- 1
@@ -26,10 +35,10 @@ if ( is.na(ntask) ) ntask <- 1
 if(ntask == 1)
 {
   int_name <- "hongkong"
-  hdir <- "../../Data/HongKong/"
+  hdir <- "../Data/HongKong/"
 } else {
   int_name <- "australia"
-  hdir <- "../../Data/Australia/"
+  hdir <- "../Data/Australia/"
 }
 
  
@@ -65,11 +74,17 @@ shape <- Rt_res[[1]]
 scale <- Rt_res[[2]]
 est_res[[1]]  <- cbind(dates,shape,scale)
 
-# error 1: alpha0 ~ Beta(2,18), alpha1 ~ Beta(4,8)
-zeta_0_est <- 2
-xi_0_est <- 18
-zeta_1_est <- 4
-xi_1_est <- 8
+# error 1: alpha0 ~ .1, alpha1 ~ .3
+mean_0_est <- .1
+mean_1_est <- .3
+sd_0_est <- sd_1_est <- .02
+para_0 <- getBetaPara(mean_0_est,sd_0_est)
+para_1 <- getBetaPara(mean_1_est,sd_1_est)
+zeta_0_est <- para_0[1]
+xi_0_est <- para_0[2]
+zeta_1_est <- para_1[1]
+xi_1_est <- para_1[2]
+ 
 
 niter <- 10000
 nburnin <- 1000
@@ -102,11 +117,16 @@ high <- tmp[2,]
 est_res[[2]]  <- cbind(dates,ave,low,high)
 
 
-# error 2: alpha0 ~ Beta(4,8), alpha1 ~ Beta(2,18)
-zeta_1_est <- 2
-xi_1_est <- 18
-zeta_0_est <- 4
-xi_0_est <- 8
+# error 2: alpha0 ~ .3, alpha1 ~ .1
+mean_0_est <- .3
+mean_1_est <- .1
+sd_0_est <- sd_1_est <- .02
+para_0 <- getBetaPara(mean_0_est,sd_0_est)
+para_1 <- getBetaPara(mean_1_est,sd_1_est)
+zeta_0_est <- para_0[1]
+xi_0_est <- para_0[2]
+zeta_1_est <- para_1[1]
+xi_1_est <- para_1[2]
 
 sim.constants <- list(si_distr=si_distr,  n_days = n_days,zeta_0=zeta_0_est,xi_0=xi_0_est, zeta_1=zeta_1_est,xi_1=xi_1_est)
 alpha_0_rand <- zeta_0_est/(zeta_0_est+xi_0_est)
