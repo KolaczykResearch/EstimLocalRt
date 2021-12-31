@@ -4,10 +4,10 @@ library(data.table)
 library(readxl)
 
 # set a directory for input
-hdir <- "../../Data/Australia/"
+hdir <- "../Data/Australia/"
 
 # set a destination for output
-sdir <- "../../Data/Australia/"
+sdir <- "../Data/Australia/"
 
 # data is available at https://doi.org/10.1101/2020.05.12.20099929
 name_csv <- "41467_2020_18314_MOESM4_ESM.xlsx"
