@@ -11,9 +11,9 @@ This repository contains code supporting the text "Estimation of local time-vary
 * Miscellaneous functions used for this paper: Rt_misc.R
 * Estimation of local time-varying reproduction numbers for simulated epidemics: simulation_Rt_estimation.R
 * Estimation of local time-varying reproduction numbers for real epidemics: application_Rt_estimation.R
-* Figure 1: simulation_diagnosed_counts.R
-* Figure 2 and Figure 3: simulation_Rt_plot.R
-* Figure 4: application_plot.R
+* Figure 2: simulation_diagnosed_counts.R
+* Figure 3 and Figure 4: simulation_Rt_plot.R
+* Figure 5: application_plot.R
 
 ## Python
 
@@ -27,4 +27,4 @@ This repository contains code supporting the text "Estimation of local time-vary
 Adam, Dillon, et al. "Clustering and superspreading potential of SARS-CoV-2 infections in Hong Kong." Nat Med 26, 1714–1719 (2020). 
 
 ### COVID-19 data in Victoria, Australia
-Seemann, Torsten, et al. "Tracking the COVID-19 pandemic in Australia using genomics." medRxiv (2020).
+Seemann, Torsten, et al. "Tracking the COVID-19 pandemic in Australia using genomics." Nature communications 11.1 (2020): 1-9.
